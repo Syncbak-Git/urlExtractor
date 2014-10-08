@@ -3,12 +3,13 @@ package urlExtractor
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 )
 
 func checkResults(matches []interface{}, t *testing.T) {
-	if len(matches) != 10 {
+	if len(matches) != 11 {
 		t.Fatalf("Bad length for matches. Expected 10, got %d", len(matches))
 	}
 	if matches[0] != nil {
@@ -41,12 +42,16 @@ func checkResults(matches []interface{}, t *testing.T) {
 	if matches[9].(time.Time) != time.Date(2014, time.October, 1, 14, 15, 38, 0, time.UTC) {
 		t.Errorf("Bad epoch s. Got %v", matches[9])
 	}
+	if !strings.HasPrefix(matches[10].(string), "path/to/resource/") {
+		t.Errorf("Bad path. Got %v\n", matches[10])
+	}
 }
 
 func TestExtract(t *testing.T) {
-	path := "ignore/literal/123/string/TWFu/deadbeef01/1000/1/1412172938000/1412172938"
-	allOK := "X^literal^ISBHdDeE"
+	path := "ignore/literal/123/string/TWFu/deadbeef01/1000/1/1412172938000/1412172938/path/to/resource/"
+	allOK := "X^literal^ISBHdDeEP"
 	matches, err := Extract(path, allOK)
+	t.Log(matches)
 	if err != nil {
 		t.Fatalf("Error in allOK: %s", err)
 	}
@@ -95,25 +100,41 @@ func TestExtract(t *testing.T) {
 	if err == nil {
 		t.Errorf("No error on empty int: %d", matches[1].(int))
 	}
+	matches, err = Extract("/path", "P")
+	if err != nil {
+		t.Errorf("Error on path: %s", err)
+	} else if len(matches) != 1 {
+		t.Errorf("Bad path length: %d", len(matches))
+	} else if matches[0].(string) != "path" {
+		t.Errorf("Bad path: %v", matches[0])
+	}
+	matches, err = Extract("/path/", "P")
+	if err != nil {
+		t.Errorf("Error on path: %s", err)
+	} else if len(matches) != 1 {
+		t.Errorf("Bad path length: %d", len(matches))
+	} else if matches[0].(string) != "path/" {
+		t.Errorf("Bad path: %v", matches[0])
+	}
 }
 
 func BenchmarkExtract(b *testing.B) {
-	path := "ignore/literal/123/string/TWFu/deadbeef01/1000/1/1412172938000/1412172938"
-	pattern := "X^literal^ISBHdDeE"
+	path := "ignore/literal/123/string/TWFu/deadbeef01/1000/1/1412172938000/1412172938/ending/path"
+	pattern := "X^literal^ISBHdDeEP"
 	for i := 0; i < b.N; i++ {
 		Extract(path, pattern)
 	}
 }
 
 func ExampleExtract() {
-	path := "ignore/literal/123/string/TWFu/deadbeef01/1000/1/1412172938000/1412172938"
-	pattern := "X^literal^ISBHdDeE"
+	path := "ignore/literal/123/string/TWFu/deadbeef01/1000/1/1412172938000/1412172938/path/to/resource"
+	pattern := "X^literal^ISBHdDeEP"
 	matches, err := Extract(path, pattern)
 	if err != nil {
 		fmt.Printf("Error in Extract: %s\n", err)
 		return
 	}
-	if len(matches) != 10 {
+	if len(matches) != 11 {
 		fmt.Printf("Bad matches length. Got %d\n", len(matches))
 	}
 	if matches[0] != nil {
@@ -145,5 +166,8 @@ func ExampleExtract() {
 	}
 	if matches[9].(time.Time) != time.Date(2014, time.October, 1, 14, 15, 38, 0, time.UTC) {
 		fmt.Printf("Bad epoch s. Got %v\n", matches[9])
+	}
+	if matches[10].(string) != "path/to/resource" {
+		fmt.Printf("Bad path. Got %v\n", matches[10])
 	}
 }

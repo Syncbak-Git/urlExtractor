@@ -25,13 +25,16 @@ import (
 //         D seconds -> time.Duration
 //         e epoch milliseconds -> time.Time
 //         E epoch seconds
+//         P path (ie, string with embedded '/' characters) Note that this only works as the last element.
 func Extract(path, pattern string) ([]interface{}, error) {
 	var err error
 	patternOffset := -1
 	if strings.HasPrefix(path, "/") {
 		path = path[1:]
 	}
+	endingSlash := false
 	if strings.HasSuffix(path, "/") {
+		endingSlash = true
 		path = path[:len(path)-1]
 	}
 	parts := strings.Split(path, "/")
@@ -91,6 +94,12 @@ func Extract(path, pattern string) ([]interface{}, error) {
 			patternOffset += len(literal) + 1
 		case "X":
 			matches[i] = nil
+		case "P":
+			matches[i] = strings.Join(parts[i:], "/")
+			if endingSlash {
+				matches[i] = matches[i].(string) + "/"
+			}
+			return matches[:i+1], nil
 		default:
 			return nil, fmt.Errorf("Unrecognized pattern %s at offset %d: %s", pattern[patternOffset:patternOffset+1], patternOffset, pattern)
 		}
