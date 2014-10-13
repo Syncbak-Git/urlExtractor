@@ -51,7 +51,6 @@ func TestExtract(t *testing.T) {
 	path := "ignore/literal/123/string/TWFu/deadbeef01/1000/1/1412172938000/1412172938/path/to/resource/"
 	allOK := "X^literal^ISBHdDeEP"
 	matches, err := Extract(path, allOK)
-	t.Log(matches)
 	if err != nil {
 		t.Fatalf("Error in allOK: %s", err)
 	}
@@ -84,17 +83,29 @@ func TestExtract(t *testing.T) {
 	if err == nil {
 		t.Errorf("No error on bad selector")
 	}
+	matches, err = Extract("//", "B")
+	if err != nil {
+		t.Errorf("Error on empty base64: %s", err)
+	} else if matches == nil || len(matches) != 1 || len(matches[0].([]byte)) != 0 {
+		t.Errorf("Bad empty base64: \"%#v\"", matches)
+	}
+	matches, err = Extract("//", "H")
+	if err != nil {
+		t.Errorf("Error on empty hex: %s", err)
+	} else if matches == nil || len(matches) != 1 || len(matches[0].([]byte)) != 0 {
+		t.Errorf("Bad empty hex: \"%#v\"", matches)
+	}
 	matches, err = Extract("//", "S")
 	if err != nil {
 		t.Errorf("Error on empty string: %s", err)
 	} else if len(matches) != 1 || matches[0].(string) != "" {
-		t.Errorf("Bad empty string: \"#v\"", matches)
+		t.Errorf("Bad empty string: \"%#v\"", matches)
 	}
 	matches, err = Extract("a//c", "XSX")
 	if err != nil {
 		t.Errorf("Error on empty string: %s", err)
 	} else if len(matches) != 3 || matches[1].(string) != "" {
-		t.Errorf("Bad empty string: \"#v\"", matches)
+		t.Errorf("Bad empty string: \"%#v\"", matches)
 	}
 	matches, err = Extract("//", "I")
 	if err == nil {
